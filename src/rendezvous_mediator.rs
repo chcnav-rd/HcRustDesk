@@ -823,11 +823,7 @@ impl RendezvousMediator {
     }
 
     fn get_relay_server(&self, provided_by_rendezvous_server: String) -> String {
-        let mut relay_server = if hbb_common::config::CUSTOM_SERVER_HOST.is_empty() {
-            Config::get_option("relay-server")
-        } else {
-            hbb_common::config::CUSTOM_SERVER_RELAY.to_owned()
-        };
+        let mut relay_server = Config::get_option("relay-server");
         if relay_server.is_empty() {
             relay_server = provided_by_rendezvous_server;
         }
