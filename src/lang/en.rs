@@ -2,6 +2,8 @@ lazy_static::lazy_static! {
 pub static ref T: std::collections::HashMap<&'static str, &'static str> =
     [
         ("desk_tip", "Your desktop can be accessed with this ID and password."),
+        ("full_device_control_tip", "After system accessibility is enabled, support can operate the whole phone, including system settings. Some payment apps may show a risk warning while it is on. Turn it off after the session."),
+        ("screen_capture_privacy_tip", "This app will access everything shown on your screen or played on your device. Protect sensitive information such as passwords, payment details, messages, photos, audio, and video."),
         ("connecting_status", "Connecting to the RustDesk network..."),
         ("not_ready_status", "Not ready. Please check your connection"),
         ("ID/Relay Server", "ID/Relay server"),
@@ -279,6 +281,8 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("wayland-soft-keyboard-input-label", "Soft keyboard input"),
         ("wayland-keyboard-input-reset-choice-tip", "Reset keyboard input choice"),
         ("remember-wayland-keyboard-choice-tip", "Don't ask again for this remote computer"),
-        ("conn-e2ee-unavailable-tip", "Could not verify end-to-end encryption.\nThe remote device may still be setting up. Try again later.\nIf this keeps happening, the server may be untrusted.\nContinue anyway?")
+        ("conn-e2ee-unavailable-tip", "Could not verify end-to-end encryption.\nThe remote device may still be setting up. Try again later.\nIf this keeps happening, the server may be untrusted.\nContinue anyway?"),
+        ("confirm-clear-shortcuts-inhibitor-permission-tip", "Are you sure you want to clear the keyboard shortcuts permission?"),
+        ("clear-shortcuts-inhibitor-permission-tip", "Clear the saved keyboard shortcuts permission so it can be requested again."),
     ].iter().cloned().collect();
 }

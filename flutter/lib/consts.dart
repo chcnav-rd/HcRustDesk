@@ -13,6 +13,16 @@ const int kMainWindowId = 0;
 
 const kAllDisplayValue = -1;
 
+/// Controller-side (outgoing-only) build switch.
+/// Pass `--dart-define=CONTROLLER_BUILD=true` when packaging to hide
+/// UI entries that are not needed by the controller build.
+const bool kControllerBuild = bool.fromEnvironment('CONTROLLER_BUILD');
+
+/// Controlled-side (incoming-only) build switch.
+/// Pass `--dart-define=CONTROLLED_BUILD=true` when packaging to hide
+/// UI entries that are not needed by the controlled build.
+const bool kControlledBuild = bool.fromEnvironment('CONTROLLED_BUILD');
+
 const kKeyLegacyMode = 'legacy';
 const kKeyMapMode = 'map';
 const kKeyTranslateMode = 'translate';

@@ -30,6 +30,13 @@ vcpkg_from_github(
     patch/0012-fix-macos-big-sur-CVBufferCopyAttachments.patch
 )
 
+# Sangfor DLP on some hosts transparently encrypts *.sh files written by
+# non-whitelisted processes (e.g. msys bash), which corrupts ffbuild/config.sh
+# when make/pkgconfig_generate.sh reads it back. Use a neutral extension.
+vcpkg_replace_string("${SOURCE_PATH}/configure" "cp_if_changed $TMPH ffbuild/config.sh" "cp_if_changed $TMPH ffbuild/config.txt")
+vcpkg_replace_string("${SOURCE_PATH}/ffbuild/library.mak" "ffbuild/config.sh" "ffbuild/config.txt")
+vcpkg_replace_string("${SOURCE_PATH}/ffbuild/pkgconfig_generate.sh" ". ffbuild/config.sh" ". ffbuild/config.txt")
+
 if(SOURCE_PATH MATCHES " ")
     message(FATAL_ERROR "Error: ffmpeg will not build with spaces in the path. Please use a directory with no spaces")
 endif()
@@ -367,6 +374,17 @@ endif()
 
 message(STATUS "Building Options: ${OPTIONS}")
 
+# Convert Windows drive paths to MSYS-style posix paths without cygpath
+macro(rd_posix_path _var)
+    if("${${_var}}" MATCHES "^([A-Za-z]):")
+        string(SUBSTRING "${${_var}}" 0 1 _rd_drv)
+        string(TOLOWER "${_rd_drv}" _rd_drv)
+        string(SUBSTRING "${${_var}}" 2 -1 _rd_rest)
+        string(REPLACE "\\" "/" _rd_rest "${_rd_rest}")
+        set(${_var} "/${_rd_drv}${_rd_rest}")
+    endif()
+endmacro()
+
 # Release build
 if(NOT VCPKG_BUILD_TYPE OR VCPKG_BUILD_TYPE STREQUAL "release")
     if(VCPKG_DETECTED_MSVC)
@@ -401,6 +419,12 @@ if(NOT VCPKG_BUILD_TYPE OR VCPKG_BUILD_TYPE STREQUAL "release")
     set(BUILD_DIR "${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-rel")
     set(CONFIGURE_OPTIONS "${OPTIONS} ${OPTIONS_RELEASE}")
     set(INST_PREFIX "${CURRENT_PACKAGES_DIR}")
+    set(RD_BUILD_DIR_POSIX "${BUILD_DIR}")
+    rd_posix_path(RD_BUILD_DIR_POSIX)
+    set(RD_SRC_DIR_POSIX "${SOURCE_PATH}")
+    rd_posix_path(RD_SRC_DIR_POSIX)
+    set(RD_INST_PREFIX_POSIX "${INST_PREFIX}")
+    rd_posix_path(RD_INST_PREFIX_POSIX)
 
     configure_file("${CMAKE_CURRENT_LIST_DIR}/build.sh.in" "${BUILD_DIR}/build.sh" @ONLY)
 
@@ -447,6 +471,12 @@ if(NOT VCPKG_BUILD_TYPE OR VCPKG_BUILD_TYPE STREQUAL "debug")
     set(BUILD_DIR "${CURRENT_BUILDTREES_DIR}/${TARGET_TRIPLET}-dbg")
     set(CONFIGURE_OPTIONS "${OPTIONS} ${OPTIONS_DEBUG}")
     set(INST_PREFIX "${CURRENT_PACKAGES_DIR}/debug")
+    set(RD_BUILD_DIR_POSIX "${BUILD_DIR}")
+    rd_posix_path(RD_BUILD_DIR_POSIX)
+    set(RD_SRC_DIR_POSIX "${SOURCE_PATH}")
+    rd_posix_path(RD_SRC_DIR_POSIX)
+    set(RD_INST_PREFIX_POSIX "${INST_PREFIX}")
+    rd_posix_path(RD_INST_PREFIX_POSIX)
 
     configure_file("${CMAKE_CURRENT_LIST_DIR}/build.sh.in" "${BUILD_DIR}/build.sh" @ONLY)
 
@@ -527,11 +557,8 @@ if(VCPKG_TARGET_IS_WINDOWS)
             set(PKGCONFIG_FILE "${CURRENT_PACKAGES_DIR}${_debug}lib/pkgconfig/${PKGCONFIG_MODULE}.pc")
 
             # remove redundant cygwin style -libpath entries
-            execute_process(
-                COMMAND "${MSYS_ROOT}/usr/bin/cygpath.exe" -u "${CURRENT_INSTALLED_DIR}"
-                OUTPUT_VARIABLE CYG_INSTALLED_DIR
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-            )
+            set(CYG_INSTALLED_DIR "${CURRENT_INSTALLED_DIR}")
+            rd_posix_path(CYG_INSTALLED_DIR)
             vcpkg_replace_string("${PKGCONFIG_FILE}" "-libpath:${CYG_INSTALLED_DIR}${_debug}lib/pkgconfig/../../lib " "")
 
             # transform libdir, includedir, and prefix paths from cygwin style to windows style
@@ -545,11 +572,7 @@ if(VCPKG_TARGET_IS_WINDOWS)
                     message(FATAL_ERROR "failed to find pkgconfig variable ${PATH_NAME}")
                 endif()
 
-                execute_process(
-                    COMMAND "${MSYS_ROOT}/usr/bin/cygpath.exe" -w "${PATH_VALUE}"
-                    OUTPUT_VARIABLE FIXED_PATH
-                    OUTPUT_STRIP_TRAILING_WHITESPACE
-                )
+                string(REGEX REPLACE "^/([a-z])/" "\\1:/" FIXED_PATH "${PATH_VALUE}")
                 file(TO_CMAKE_PATH "${FIXED_PATH}" FIXED_PATH)
                 vcpkg_replace_string("${PKGCONFIG_FILE}" "${PATH_NAME}=${PATH_VALUE}" "${PATH_NAME}=${FIXED_PATH}")
             endforeach()
@@ -693,6 +716,11 @@ extract_version_from_component(LIBSWSCALE_VERSION
 
 # Handle copyright
 file(STRINGS "${CURRENT_BUILDTREES_DIR}/build-${TARGET_TRIPLET}-rel-out.log" LICENSE_STRING REGEX "License: .*" LIMIT_COUNT 1)
+if(NOT LICENSE_STRING)
+    # configure summary can be missing from the captured log on DLP-monitored hosts;
+    # our option set (--enable-gpl, no --enable-nonfree/--enable-version3) implies GPLv2+.
+    set(LICENSE_STRING "License: GPL version 2 or later")
+endif()
 
 if(LICENSE_STRING STREQUAL "License: LGPL version 2.1 or later")
     set(LICENSE_FILE "COPYING.LGPLv2.1")

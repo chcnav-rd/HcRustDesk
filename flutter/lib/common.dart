@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'consts.dart';
 
 import 'package:back_button_interceptor/back_button_interceptor.dart';
 import 'package:desktop_multi_window/desktop_multi_window.dart';
@@ -19,6 +20,7 @@ import 'package:flutter_hbb/utils/multi_window_manager.dart';
 import 'package:flutter_hbb/utils/platform_channel.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:get/get_rx/src/rx_workers/utils/debouncer.dart';
 import 'package:provider/provider.dart';
 import 'package:uni_links/uni_links.dart';
@@ -825,6 +827,10 @@ class OverlayDialogManager {
     BackButtonInterceptor.removeByName(tag);
   }
 
+  bool contains(String tag) {
+    return _dialogs.containsKey(tag);
+  }
+
   Future<T?> show<T>(DialogBuilder builder,
       {bool clickMaskDismiss = false,
       bool backDismiss = false,
@@ -1185,6 +1191,12 @@ void msgBox(SessionID sessionId, String type, String title, String text,
     VoidCallback? onSubmit,
     int? submitTimeout}) {
   dialogManager.dismissAll();
+  if (kControllerBuild &&
+      (type == 'input-password' ||
+          type == 're-input-password' ||
+          type == 'custom-os-password')) {
+    return;
+  }
   if (type.contains('insecure-connection')) {
     Future<void> closeSession() async {
       await bind.sessionSetCommon(
@@ -1612,11 +1624,44 @@ Future<void> initGlobalFFI() async {
   Get.put<FFI>(_globalFFI, permanent: true);
 }
 
+String _installedAppLabel = '';
+
+bool get isControlledProduct =>
+    kControlledBuild ||
+    (_installedAppLabel.isNotEmpty && _installedAppLabel != 'RustDesk');
+
+Future<void> loadInstalledAppLabel() async {
+  if (!isAndroid) {
+    return;
+  }
+  try {
+    final info = await PackageInfo.fromPlatform();
+    _installedAppLabel = info.appName;
+  } catch (e) {
+    debugPrint('loadInstalledAppLabel failed: $e');
+  }
+}
+
+String displayAppName() {
+  if (!isControlledProduct) {
+    return bind.mainGetAppNameSync();
+  }
+  return translate('Remote support');
+}
+
 String translate(String name) {
   if (name.startsWith('Failed to') && name.contains(': ')) {
     return name.split(': ').map((x) => translate(x)).join(': ');
   }
-  return platformFFI.translate(name, localeName);
+  final text = platformFFI.translate(name, localeName);
+  if (!isControlledProduct ||
+      name == 'Remote support' ||
+      name.startsWith('upgrade_rustdesk_server_pro') ||
+      name == 'powered_by_me' ||
+      !text.contains('RustDesk')) {
+    return text;
+  }
+  return text.replaceAll('RustDesk', displayAppName());
 }
 
 // This function must be kept the same as the one in rust and sciter code.
@@ -3036,7 +3081,7 @@ int versionCmp(String v1, String v2) {
 }
 
 String getWindowName({WindowType? overrideType}) {
-  final name = bind.mainGetAppNameSync();
+  final name = displayAppName();
   switch (overrideType ?? kWindowType) {
     case WindowType.Main:
       return name;

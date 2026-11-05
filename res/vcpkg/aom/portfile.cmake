@@ -1,3 +1,11 @@
+# Clang 16+ (incl. AppleClang 21 on macOS 26) treats implicit function
+# declarations as hard errors; aom 3.12.1 uses rtcd-dispatched symbols
+# (aom_sse, aom_var_2d_*) without prototypes in some translation units.
+if(NOT VCPKG_TARGET_IS_WINDOWS)
+    set(VCPKG_C_FLAGS "${VCPKG_C_FLAGS} -Wno-error=implicit-function-declaration")
+    set(VCPKG_CXX_FLAGS "${VCPKG_CXX_FLAGS} -Wno-error=implicit-function-declaration")
+endif()
+
 # NASM is required to build AOM
 vcpkg_find_acquire_program(NASM)
 get_filename_component(NASM_EXE_PATH ${NASM} DIRECTORY)
@@ -11,7 +19,7 @@ vcpkg_add_to_path(${PERL_PATH})
 if(DEFINED ENV{USE_AOM_391})
     vcpkg_from_git(
         OUT_SOURCE_PATH SOURCE_PATH
-        URL "https://aomedia.googlesource.com/aom"
+        URL "https://ghfast.top/https://github.com/arthenica/libaom"
         REF 8ad484f8a18ed1853c094e7d3a4e023b2a92df28 # 3.9.1
         PATCHES
             aom-uninitialized-pointer.diff
@@ -21,7 +29,7 @@ if(DEFINED ENV{USE_AOM_391})
 else()
     vcpkg_from_git(
         OUT_SOURCE_PATH SOURCE_PATH
-        URL "https://aomedia.googlesource.com/aom"
+        URL "https://ghfast.top/https://github.com/arthenica/libaom"
         REF 10aece4157eb79315da205f39e19bf6ab3ee30d0 # 3.12.1
         PATCHES
             aom-uninitialized-pointer.diff
@@ -42,10 +50,18 @@ if(VCPKG_TARGET_ARCHITECTURE STREQUAL "arm" AND VCPKG_TARGET_IS_LINUX)
   set(aom_target_cpu "-DENABLE_NEON=OFF")
 endif()
 
+# On this Mac, /usr/bin/perl reads .h/.c as ciphertext, so rtcd.pl drops
+# every CONFIG_* prototype. perl-plain copies --config to .txt first.
+set(aom_perl_executable "")
+if(CMAKE_HOST_APPLE AND DEFINED ENV{HOME} AND EXISTS "$ENV{HOME}/.local/bin/perl-plain")
+    set(aom_perl_executable "-DPERL_EXECUTABLE=$ENV{HOME}/.local/bin/perl-plain")
+endif()
+
 vcpkg_cmake_configure(
     SOURCE_PATH ${SOURCE_PATH}
     OPTIONS
         ${aom_target_cpu}
+        ${aom_perl_executable}
         -DENABLE_DOCS=OFF
         -DENABLE_EXAMPLES=OFF
         -DENABLE_TESTDATA=OFF

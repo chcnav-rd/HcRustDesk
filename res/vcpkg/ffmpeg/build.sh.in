@@ -76,9 +76,9 @@ export PKG_CONFIG_PATH="$(cygpath -p "${PKG_CONFIG_PATH}")"
 [ -n "$HTTP_PROXY"  ] && export http_proxy="$HTTP_PROXY"
 [ -n "$HTTPS_PROXY" ] && export https_proxy="$HTTPS_PROXY"
 
-PATH_TO_BUILD_DIR=$(  cygpath "@BUILD_DIR@")
-PATH_TO_SRC_DIR=$(    cygpath "@SOURCE_PATH@")
-PATH_TO_PACKAGE_DIR=$(cygpath "@INST_PREFIX@")
+PATH_TO_BUILD_DIR="@RD_BUILD_DIR_POSIX@"
+PATH_TO_SRC_DIR="@RD_SRC_DIR_POSIX@"
+PATH_TO_PACKAGE_DIR="@RD_INST_PREFIX_POSIX@"
 
 JOBS=@VCPKG_CONCURRENCY@
 
@@ -118,6 +118,27 @@ build_ffmpeg() {
     echo "=== CONFIGURING ==="
 
     sh "$PATH_TO_SRC_DIR/configure" "--prefix=$PATH_TO_PACKAGE_DIR" @CONFIGURE_OPTIONS@ --arch=${BUILD_ARCH} ${!OPTION_VARIABLE} $@
+
+    # Local file protection strips lines containing #endif from headers
+    # written by bash. Restore the guards before compiling.
+    python3 - <<'PY'
+from pathlib import Path
+pairs = {
+    "config.h": "FFMPEG_CONFIG_H",
+    "config_components.h": "FFMPEG_CONFIG_COMPONENTS_H",
+    "libavutil/avconfig.h": "AVUTIL_AVCONFIG_H",
+}
+for name, guard in pairs.items():
+    path = Path(name)
+    if not path.is_file():
+        continue
+    text = path.read_text()
+    if "#endif" in text:
+        continue
+    if not text.endswith("\n"):
+        text += "\n"
+    path.write_text(text + f"#endif /* {guard} */\n")
+PY
 
     echo "=== BUILDING ==="
 

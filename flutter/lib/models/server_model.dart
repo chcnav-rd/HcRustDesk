@@ -38,6 +38,7 @@ class ServerModel with ChangeNotifier {
   bool _allowNumericOneTimePassword = false;
   String _approveMode = "";
   int _zeroClientLengthCounter = 0;
+  bool _grantablePermissionsRequested = false;
 
   late String _emptyIdShow;
   late final IDTextEditingController _serverId;
@@ -225,6 +226,30 @@ class ServerModel with ChangeNotifier {
     _clipboardOk = clipOption != 'N';
 
     notifyListeners();
+  }
+
+  /**
+   * 提前申请文件和录音权限。用户同意后打开对应开关。
+   */
+  Future<void> requestGrantableSharePermissions() async {
+    if (!isAndroid || _grantablePermissionsRequested) {
+      return;
+    }
+    _grantablePermissionsRequested = true;
+    if (!await AndroidPermissionManager.check(kManageExternalStorage)) {
+      if (await AndroidPermissionManager.request(kManageExternalStorage)) {
+        await bind.mainSetOption(
+            key: kOptionEnableFileTransfer, value: defaultOptionYes);
+      }
+    }
+    if (androidVersion >= 30 &&
+        !await AndroidPermissionManager.check(kRecordAudio)) {
+      if (await AndroidPermissionManager.request(kRecordAudio)) {
+        await bind.mainSetOption(
+            key: kOptionEnableAudio, value: defaultOptionYes);
+      }
+    }
+    await checkAndroidPermission();
   }
 
   updatePasswordModel() async {
@@ -431,7 +456,7 @@ class ServerModel with ChangeNotifier {
             const SizedBox(width: 10),
             Text(translate("Warning")),
           ]),
-          content: Text(translate("android_service_will_start_tip")),
+          content: Text(translate("screen_capture_privacy_tip")),
           actions: [
             dialogButton("Cancel", onPressed: close, isOutline: true),
             dialogButton("OK", onPressed: submit),
@@ -911,8 +936,10 @@ String getLoginDialogTag(int id) {
 showInputWarnAlert(FFI ffi) {
   ffi.dialogManager.show((setState, close, context) {
     submit() {
-      AndroidPermissionManager.startAction(kActionAccessibilitySettings);
       close();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AndroidPermissionManager.startAction(kActionAccessibilitySettings);
+      });
     }
 
     return CustomAlertDialog(

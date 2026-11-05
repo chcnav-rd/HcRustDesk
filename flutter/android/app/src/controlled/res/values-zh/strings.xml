@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">远程协助</string>
+    <string name="accessibility_service_label">远程协助</string>
+    <string name="accessibility_service_description">远程协助共享屏幕后，允许其他设备通过虚拟触控控制你的手机</string>
+    <string name="boot_open_tip">远程协助已打开</string>
+</resources>

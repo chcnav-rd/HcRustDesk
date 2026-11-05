@@ -886,6 +886,15 @@ _connectDialog(
     });
   }
 
+  // The peer can answer "no password" while this dialog is still loading.
+  // Leave that wait-for-accept dialog in place.
+  if (passwordController != null &&
+      osUsernameController == null &&
+      osPasswordController == null &&
+      dialogManager.contains('$sessionId-wait-remote-accept-nook')) {
+    return;
+  }
+
   dialogManager.dismissAll();
   dialogManager.show((setState, close, context) {
     cancel() {
@@ -1318,7 +1327,7 @@ void showWaitAcceptDialog(SessionID sessionId, String type, String title,
       ],
       onCancel: onCancel,
     );
-  });
+  }, tag: '$sessionId-wait-remote-accept-nook');
 }
 
 void showRestartRemoteDevice(PeerInfo pi, String id, SessionID sessionId,

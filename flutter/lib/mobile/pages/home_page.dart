@@ -4,7 +4,7 @@ import 'package:flutter_hbb/mobile/pages/settings_page.dart';
 import 'package:flutter_hbb/web/settings_page.dart';
 import 'package:get/get.dart';
 import '../../common.dart';
-import '../../common/widgets/chat_page.dart';
+import '../../consts.dart';
 import '../../models/platform_model.dart';
 import '../../models/state_model.dart';
 import 'connection_page.dart';
@@ -47,16 +47,18 @@ class HomePageState extends State<HomePage> {
 
   void initPages() {
     _pages.clear();
-    if (!bind.isIncomingOnly()) {
+    final controllerBuild = kControllerBuild || bind.isOutgoingOnly();
+    if (controllerBuild && !bind.isIncomingOnly()) {
       _pages.add(ConnectionPage(
         appBarActions: [],
       ));
     }
-    if (isAndroid && !bind.isOutgoingOnly()) {
-      _chatPageTabIndex = _pages.length;
-      _pages.addAll([ChatPage(type: ChatPageType.mobileMain), ServerPage()]);
+    if (isAndroid && !controllerBuild && !bind.isOutgoingOnly()) {
+      _pages.add(ServerPage());
     }
-    _pages.add(SettingsPage());
+    if (controllerBuild || _pages.isEmpty) {
+      _pages.add(SettingsPage());
+    }
   }
 
   @override
@@ -79,29 +81,24 @@ class HomePageState extends State<HomePage> {
             title: appTitle(),
             actions: _pages.elementAt(_selectedIndex).appBarActions,
           ),
-          bottomNavigationBar: BottomNavigationBar(
-            key: navigationBarKey,
-            items: _pages
-                .map((page) =>
-                    BottomNavigationBarItem(icon: page.icon, label: page.title))
-                .toList(),
-            currentIndex: _selectedIndex,
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: MyTheme.accent, //
-            unselectedItemColor: MyTheme.darkGray,
-            onTap: (index) => setState(() {
-              // close chat overlay when go chat page
-              if (_selectedIndex != index) {
-                _selectedIndex = index;
-                if (isChatPageCurrentTab) {
-                  gFFI.chatModel.hideChatIconOverlay();
-                  gFFI.chatModel.hideChatWindowOverlay();
-                  gFFI.chatModel.mobileClearClientUnread(
-                      gFFI.chatModel.currentKey.connId);
-                }
-              }
-            }),
-          ),
+          bottomNavigationBar: _pages.length < 2
+              ? null
+              : BottomNavigationBar(
+                  key: navigationBarKey,
+                  items: _pages
+                      .map((page) => BottomNavigationBarItem(
+                          icon: page.icon, label: page.title))
+                      .toList(),
+                  currentIndex: _selectedIndex,
+                  type: BottomNavigationBarType.fixed,
+                  selectedItemColor: MyTheme.accent,
+                  unselectedItemColor: MyTheme.darkGray,
+                  onTap: (index) => setState(() {
+                    if (_selectedIndex != index) {
+                      _selectedIndex = index;
+                    }
+                  }),
+                ),
           body: _pages.elementAt(_selectedIndex),
         ));
   }
@@ -150,7 +147,7 @@ class HomePageState extends State<HomePage> {
         ],
       );
     }
-    return Text(bind.mainGetAppNameSync());
+    return Text(displayAppName());
   }
 }
 
@@ -166,7 +163,7 @@ class WebHomePage extends StatelessWidget {
       // backgroundColor: MyTheme.grayBg,
       appBar: AppBar(
         centerTitle: true,
-        title: Text("${bind.mainGetAppNameSync()} (Preview)"),
+        title: Text("${displayAppName()} (Preview)"),
         actions: connectionPage.appBarActions,
       ),
       body: connectionPage,

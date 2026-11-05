@@ -39,10 +39,13 @@ class PeerTabModel with ChangeNotifier {
   ];
   List<bool> isEnabled = List.from([
     true,
-    true,
-    !isWeb && bind.mainGetLocalOption(key: "disable-discovery-panel") != "Y",
-    !(bind.isDisableAb() || bind.isDisableAccount()),
-    !(bind.isDisableGroupPanel() || bind.isDisableAccount()),
+    !kControllerBuild,
+    !kControllerBuild &&
+        !isWeb &&
+        bind.mainGetLocalOption(key: "disable-discovery-panel") != "Y",
+    !kControllerBuild && !(bind.isDisableAb() || bind.isDisableAccount()),
+    !kControllerBuild &&
+        !(bind.isDisableGroupPanel() || bind.isDisableAccount()),
   ]);
   final List<bool> _isVisible = List.filled(maxTabCount, true, growable: false);
   List<bool> get isVisibleEnabled => () {

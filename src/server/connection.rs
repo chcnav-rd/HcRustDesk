@@ -39,7 +39,7 @@ use hbb_common::{
     futures::{SinkExt, StreamExt},
     get_time, get_version_number,
     message_proto::{option_message::BoolOption, permission_info::Permission},
-    password_security::{self as password, ApproveMode},
+    password_security::{self as password},
     sha2::{Digest, Sha256},
     sleep, timeout,
     tokio::{
@@ -447,6 +447,42 @@ const MILLI1: Duration = Duration::from_millis(1);
 const SEND_TIMEOUT_VIDEO: u64 = 12_000;
 const SEND_TIMEOUT_OTHER: u64 = SEND_TIMEOUT_VIDEO * 10;
 const SESSION_TIMEOUT: Duration = Duration::from_secs(30);
+
+fn allow_logon_screen_password() -> bool {
+    if crate::get_builtin_option(keys::OPTION_ALLOW_LOGON_SCREEN_PASSWORD) != "Y" {
+        return false;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return crate::platform::is_prelogin() || crate::platform::is_locked() || {
+            match crate::platform::is_logon_ui() {
+                Ok(result) => result,
+                Err(e) => {
+                    log::error!("Failed to detect logon UI: {:?}", e);
+                    false
+                }
+            }
+        };
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        return crate::platform::is_prelogin() || crate::platform::is_locked();
+    }
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+        return crate::platform::is_prelogin();
+    }
+    #[cfg(not(any(
+        target_os = "windows",
+        target_os = "linux",
+        target_os = "macos",
+        target_os = "android",
+        target_os = "ios"
+    )))]
+    {
+        false
+    }
+}
 
 impl Connection {
     pub async fn start(
@@ -1386,6 +1422,11 @@ impl Connection {
             }
         }
         self.ip = addr.ip().to_string();
+        self.hash.no_password_access = password::no_password_access(
+            password::approve_mode(),
+            allow_logon_screen_password(),
+            password::has_valid_password(),
+        );
         let mut msg_out = Message::new();
         msg_out.set_hash(self.hash.clone());
         self.send(msg_out).await;
@@ -2649,33 +2690,15 @@ impl Connection {
                 return true;
             }
 
+            // Logon-screen password fallback still requires a password prompt.
             // https://github.com/rustdesk/rustdesk-server-pro/discussions/646
-            // `is_logon` is used to check login with `OPTION_ALLOW_LOGON_SCREEN_PASSWORD` == "Y".
-            // `is_logon_ui()` is a fallback for logon UI detection on Windows.
-            #[cfg(target_os = "windows")]
-            let is_logon = || {
-                crate::platform::is_prelogin() || crate::platform::is_locked() || {
-                    match crate::platform::is_logon_ui() {
-                        Ok(result) => result,
-                        Err(e) => {
-                            log::error!("Failed to detect logon UI: {:?}", e);
-                            false
-                        }
-                    }
-                }
-            };
-            #[cfg(any(target_os = "linux", target_os = "macos"))]
-            let is_logon = || crate::platform::is_prelogin() || crate::platform::is_locked();
-            #[cfg(any(target_os = "android", target_os = "ios"))]
-            let is_logon = || crate::platform::is_prelogin();
+            let allow_logon_screen_password = allow_logon_screen_password();
 
-            let allow_logon_screen_password =
-                crate::get_builtin_option(keys::OPTION_ALLOW_LOGON_SCREEN_PASSWORD) == "Y"
-                    && is_logon();
-
-            if (password::approve_mode() == ApproveMode::Click && !allow_logon_screen_password)
-                || password::approve_mode() == ApproveMode::Both && !password::has_valid_password()
-            {
+            if password::no_password_access(
+                password::approve_mode(),
+                allow_logon_screen_password,
+                password::has_valid_password(),
+            ) {
                 #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 if should_use_terminal_os_login_scope(self.terminal, &lr.os_login.username) {
                     if let Some(keep_alive) = self.prepare_terminal_login_for_authorization().await

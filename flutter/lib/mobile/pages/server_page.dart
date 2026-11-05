@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/desktop/pages/desktop_home_page.dart';
 import 'package:flutter_hbb/mobile/widgets/dialog.dart';
-import 'package:flutter_hbb/models/chat_model.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
@@ -14,6 +13,7 @@ import '../../consts.dart';
 import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
 import 'home_page.dart';
+import 'settings_page.dart';
 
 class ServerPage extends StatefulWidget implements PageShape {
   @override
@@ -37,145 +37,35 @@ class ServerPage extends StatefulWidget implements PageShape {
 class _DropDownAction extends StatelessWidget {
   _DropDownAction();
 
-  // should only have one action
-  final actions = [
-    PopupMenuButton<String>(
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
         tooltip: "",
         icon: const Icon(Icons.more_vert),
         itemBuilder: (context) {
-          listTile(String text, bool checked) {
-            return ListTile(
-                title: Text(translate(text)),
-                trailing: Icon(
-                  Icons.check,
-                  color: checked ? null : Colors.transparent,
-                ));
-          }
-
-          final approveMode = gFFI.serverModel.approveMode;
-          final verificationMethod = gFFI.serverModel.verificationMethod;
-          final showPasswordOption = approveMode != 'click';
-          final isApproveModeFixed = isOptionFixed(kOptionApproveMode);
-          final isNumericOneTimePasswordFixed =
-              isOptionFixed(kOptionAllowNumericOneTimePassword);
-          final isAllowNumericOneTimePassword =
-              gFFI.serverModel.allowNumericOneTimePassword;
           return [
-            if (!isChangeIdDisabled())
+            if (!bind.isDisableSettings())
               PopupMenuItem(
-                enabled: gFFI.serverModel.connectStatus > 0,
-                value: "changeID",
-                child: Text(translate("Change ID")),
-              ),
-            if (!isChangeIdDisabled()) const PopupMenuDivider(),
-            PopupMenuItem(
-              value: 'AcceptSessionsViaPassword',
-              child: listTile(
-                  'Accept sessions via password', approveMode == 'password'),
-              enabled: !isApproveModeFixed,
-            ),
-            PopupMenuItem(
-              value: 'AcceptSessionsViaClick',
-              child:
-                  listTile('Accept sessions via click', approveMode == 'click'),
-              enabled: !isApproveModeFixed,
-            ),
-            PopupMenuItem(
-              value: "AcceptSessionsViaBoth",
-              child: listTile("Accept sessions via both",
-                  approveMode != 'password' && approveMode != 'click'),
-              enabled: !isApproveModeFixed,
-            ),
-            if (showPasswordOption) const PopupMenuDivider(),
-            if (showPasswordOption &&
-                verificationMethod != kUseTemporaryPassword &&
-                !isChangePermanentPasswordDisabled())
-              PopupMenuItem(
-                value: "setPermanentPassword",
-                child: Text(translate("Set permanent password")),
-              ),
-            if (showPasswordOption &&
-                verificationMethod != kUsePermanentPassword)
-              PopupMenuItem(
-                value: "setTemporaryPasswordLength",
-                child: Text(translate("One-time password length")),
-              ),
-            if (showPasswordOption &&
-                verificationMethod != kUsePermanentPassword)
-              PopupMenuItem(
-                value: "allowNumericOneTimePassword",
-                child: listTile(translate("Numeric one-time password"),
-                    isAllowNumericOneTimePassword),
-                enabled: !isNumericOneTimePasswordFixed,
-              ),
-            if (showPasswordOption) const PopupMenuDivider(),
-            if (showPasswordOption)
-              PopupMenuItem(
-                value: kUseTemporaryPassword,
-                child: listTile('Use one-time password',
-                    verificationMethod == kUseTemporaryPassword),
-              ),
-            if (showPasswordOption)
-              PopupMenuItem(
-                value: kUsePermanentPassword,
-                child: listTile('Use permanent password',
-                    verificationMethod == kUsePermanentPassword),
-              ),
-            if (showPasswordOption)
-              PopupMenuItem(
-                value: kUseBothPasswords,
-                child: listTile(
-                    'Use both passwords',
-                    verificationMethod != kUseTemporaryPassword &&
-                        verificationMethod != kUsePermanentPassword),
+                value: 'settings',
+                child: Text(translate('Settings')),
               ),
           ];
         },
-        onSelected: (value) async {
-          if (value == "changeID") {
-            changeIdDialog();
-          } else if (value == "setPermanentPassword") {
-            setPasswordDialog();
-          } else if (value == "setTemporaryPasswordLength") {
-            setTemporaryPasswordLengthDialog(gFFI.dialogManager);
-          } else if (value == "allowNumericOneTimePassword") {
-            gFFI.serverModel.switchAllowNumericOneTimePassword();
-            gFFI.serverModel.updatePasswordModel();
-          } else if (value == kUsePermanentPassword ||
-              value == kUseTemporaryPassword ||
-              value == kUseBothPasswords) {
-            callback() {
-              bind.mainSetOption(key: kOptionVerificationMethod, value: value);
-              gFFI.serverModel.updatePasswordModel();
-            }
-
-            if (value == kUsePermanentPassword &&
-                (await bind.mainGetCommon(key: "permanent-password-set")) !=
-                    "true") {
-              if (isChangePermanentPasswordDisabled()) {
-                callback();
-                return;
-              }
-              setPasswordDialog(notEmptyCallback: callback);
-            } else {
-              callback();
-            }
-          } else if (value.startsWith("AcceptSessionsVia")) {
-            value = value.substring("AcceptSessionsVia".length);
-            if (value == "Password") {
-              gFFI.serverModel.setApproveMode('password');
-            } else if (value == "Click") {
-              gFFI.serverModel.setApproveMode('click');
-            } else {
-              gFFI.serverModel.setApproveMode(defaultOptionApproveMode);
-            }
+        onSelected: (value) {
+          if (value == 'settings') {
+            final page = SettingsPage();
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (context) => Scaffold(
+                appBar: AppBar(
+                  centerTitle: true,
+                  title: Text(translate('Settings')),
+                  actions: page.appBarActions,
+                ),
+                body: page,
+              ),
+            ));
           }
-        })
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return actions[0];
+        });
   }
 }
 
@@ -185,10 +75,15 @@ class _ServerPageState extends State<ServerPage> {
   @override
   void initState() {
     super.initState();
+    gFFI.serverModel.setApproveMode('click').then((_) {
+      gFFI.serverModel.updatePasswordModel();
+    });
     _updateTimer = periodic_immediate(const Duration(seconds: 3), () async {
       await gFFI.serverModel.fetchID();
     });
-    gFFI.serverModel.checkAndroidPermission();
+    gFFI.serverModel.checkAndroidPermission().then((_) {
+      gFFI.serverModel.requestGrantableSharePermissions();
+    });
   }
 
   @override
@@ -210,11 +105,9 @@ class _ServerPageState extends State<ServerPage> {
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         buildPresetPasswordWarningMobile(),
-                        gFFI.serverModel.isStart
-                            ? ServerInfo()
-                            : ServiceNotRunningNotification(),
+                        ShareDeviceCard(),
+                        FullDeviceControlCard(),
                         const ConnectionManager(),
-                        const PermissionChecker(),
                         SizedBox.fromSize(size: const Size(0, 15.0)),
                       ],
                     ),
@@ -253,15 +146,7 @@ class ServiceNotRunningNotification extends StatelessWidget {
                 .marginOnly(bottom: 8),
             ElevatedButton.icon(
                 icon: const Icon(Icons.play_arrow),
-                onPressed: () {
-                  if (gFFI.userModel.userName.value.isEmpty &&
-                      bind.mainGetLocalOption(key: "show-scam-warning") !=
-                          "N") {
-                    showScamWarning(context, serverModel);
-                  } else {
-                    serverModel.toggleService();
-                  }
-                },
+                onPressed: serverModel.toggleService,
                 label: Text(translate("Start service")))
           ],
         ));
@@ -507,8 +392,6 @@ class ServerInfo extends StatelessWidget {
       }
     }
 
-    final showOneTime = serverModel.approveMode != 'click' &&
-        serverModel.verificationMethod != kUsePermanentPassword;
     return PaddingCard(
         title: translate('Your Device'),
         child: Column(
@@ -535,39 +418,112 @@ class ServerInfo extends StatelessWidget {
                     copyToClipboard(model.serverId.value.text.trim());
                   })
             ]).marginOnly(left: 39, bottom: 10),
-            // Password
-            Row(children: [
-              const Icon(Icons.lock_outline, color: Colors.grey, size: iconSize)
-                  .marginOnly(right: iconMarginRight),
-              Text(
-                translate('One-time Password'),
-                style: textStyleHeading,
-              )
-            ]),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text(
-                !showOneTime ? '-' : model.serverPasswd.value.text,
-                style: textStyleValue,
-              ),
-              !showOneTime
-                  ? SizedBox.shrink()
-                  : Row(children: [
-                      IconButton(
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.refresh),
-                          onPressed: () => bind.mainUpdateTemporaryPassword()),
-                      IconButton(
-                          visualDensity: VisualDensity.compact,
-                          icon: Icon(Icons.copy_outlined),
-                          onPressed: () {
-                            copyToClipboard(
-                                model.serverPasswd.value.text.trim());
-                          })
-                    ])
-            ]).marginOnly(left: 40, bottom: 15),
             ConnectionStateNotification()
           ],
         ));
+  }
+}
+
+class ShareDeviceCard extends StatelessWidget {
+  const ShareDeviceCard({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final serverModel = Provider.of<ServerModel>(context);
+    final idText = serverModel.serverId.text.trim();
+    return PaddingCard(
+      title: translate('Your Device'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  idText.isEmpty ? '-' : idText,
+                  style: const TextStyle(
+                      fontSize: 30, fontWeight: FontWeight.w600),
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.copy_outlined),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: idText));
+                  showToast(translate('Copied'));
+                },
+              ),
+            ],
+          ),
+          if (!serverModel.isStart)
+            ElevatedButton.icon(
+              icon: const Icon(Icons.play_arrow),
+              onPressed: serverModel.toggleService,
+              label: Text(translate('Start screen sharing')),
+            )
+          else
+            Row(
+              children: [
+                const Icon(Icons.check, color: Colors.green, size: 18),
+                const SizedBox(width: 6),
+                Text(translate('Ready')),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  style: ButtonStyle(
+                    backgroundColor: MaterialStateProperty.all(Colors.red),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: const Icon(Icons.stop, size: 16),
+                  onPressed: serverModel.toggleService,
+                  label: Text(translate('Stop sharing')),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class FullDeviceControlCard extends StatelessWidget {
+  const FullDeviceControlCard({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final serverModel = Provider.of<ServerModel>(context);
+    return PaddingCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  translate('Full device control'),
+                  style: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: const StadiumBorder(),
+                  visualDensity: VisualDensity.compact,
+                ),
+                onPressed: serverModel.toggleInput,
+                child: Text(serverModel.inputOk
+                    ? translate('Already enabled')
+                    : translate('Go to enable')),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            translate('full_device_control_tip'),
+            style: const TextStyle(color: MyTheme.darkGray, fontSize: 13),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -610,11 +566,7 @@ class _PermissionCheckerState extends State<PermissionChecker> {
             PermissionRow(
                 translate("Screen Capture"),
                 serverModel.mediaOk,
-                !serverModel.mediaOk &&
-                        gFFI.userModel.userName.value.isEmpty &&
-                        bind.mainGetLocalOption(key: "show-scam-warning") != "N"
-                    ? () => showScamWarning(context, serverModel)
-                    : serverModel.toggleService),
+                serverModel.toggleService),
           PermissionRow(
             translate("Input Control"),
             serverModel.inputOk,
@@ -692,22 +644,6 @@ class ConnectionManager extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(child: ClientInfo(client)),
-                      Expanded(
-                          flex: -1,
-                          child: client.isFileTransfer || !client.authorized
-                              ? const SizedBox.shrink()
-                              : IconButton(
-                                  onPressed: () {
-                                    gFFI.chatModel.changeCurrentKey(
-                                        MessageKey(client.peerId, client.id));
-                                    final bar = navigationBarKey.currentWidget;
-                                    if (bar != null) {
-                                      bar as BottomNavigationBar;
-                                      bar.onTap!(1);
-                                    }
-                                  },
-                                  icon: unreadTopRightBuilder(
-                                      client.unreadChatMessageCount)))
                     ],
                   ),
                   client.authorized

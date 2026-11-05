@@ -71,7 +71,6 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
       false; //androidVersion >= 26; // remove because not work on every device
   var _ignoreBatteryOpt = false;
   var _enableStartOnBoot = false;
-  var _checkUpdateOnStartup = false;
   var _showTerminalExtraKeys = false;
   var _floatingWindowDisabled = false;
   var _keepScreenOn = KeepScreenOn.duringControlled; // relay on floating window
@@ -148,10 +147,17 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
         mainGetLocalBoolOptionSync(kOptionEnableShowTerminalExtraKeys);
   }
 
+  void _onServerModelChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    gFFI.serverModel.addListener(_onServerModelChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       var update = false;
@@ -179,13 +185,6 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
       if (enableStartOnBoot != _enableStartOnBoot) {
         update = true;
         _enableStartOnBoot = enableStartOnBoot;
-      }
-
-      var checkUpdateOnStartup =
-          mainGetLocalBoolOptionSync(kOptionEnableCheckUpdate);
-      if (checkUpdateOnStartup != _checkUpdateOnStartup) {
-        update = true;
-        _checkUpdateOnStartup = checkUpdateOnStartup;
       }
 
       var floatingWindowDisabled =
@@ -231,6 +230,7 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    gFFI.serverModel.removeListener(_onServerModelChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -593,22 +593,6 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
           gFFI.invokeMethod(AndroidChannel.kSetStartOnBootOpt, toValue);
         }));
 
-    if (!bind.isCustomClient()) {
-      enhancementsTiles.add(
-        SettingsTile.switchTile(
-          initialValue: _checkUpdateOnStartup,
-          title:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(translate('Check for software update on startup')),
-          ]),
-          onToggle: (bool toValue) async {
-            await mainSetLocalBoolOption(kOptionEnableCheckUpdate, toValue);
-            setState(() => _checkUpdateOnStartup = toValue);
-          },
-        ),
-      );
-    }
-
     enhancementsTiles.add(
       SettingsTile.switchTile(
         initialValue: _showTerminalExtraKeys,
@@ -679,38 +663,76 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
     final disabledSettings = bind.isDisableSettings();
     final hideSecuritySettings =
         bind.mainGetBuildinOption(key: kOptionHideSecuritySetting) == 'Y';
+    final serverModel = gFFI.serverModel;
+    final permissionChangeLocked = isAndroid &&
+        serverModel.clients.any((c) => !c.disconnected) &&
+        !option2bool(
+            kOptionEnablePermChangeInAcceptWindow,
+            bind.mainGetBuildinOption(
+              key: kOptionEnablePermChangeInAcceptWindow,
+            ));
+    final hasAudioPermission = androidVersion >= 30;
+    Future<void> refreshPermission(Future<void> action) async {
+      await action;
+      if (mounted) {
+        setState(() {});
+      }
+    }
+
     final settings = SettingsList(
       sections: [
         customClientSection,
-        if (!bind.isDisableAccount())
-          SettingsSection(
-            title: Text(translate('Account')),
-            tiles: [
+        SettingsSection(
+          title: Text(translate('Permissions')),
+          tiles: [
+            SettingsTile.switchTile(
+              title: Text(translate('Screen Capture')),
+              initialValue: serverModel.mediaOk,
+              onToggle: (value) {
+                refreshPermission(serverModel.toggleService());
+              },
+            ),
+            SettingsTile.switchTile(
+              title: Text(translate('Input Control')),
+              initialValue: serverModel.inputOk,
+              onToggle: (value) {
+                refreshPermission(serverModel.toggleInput());
+              },
+            ),
+            SettingsTile.switchTile(
+              title: Text(translate('Transfer file')),
+              initialValue: serverModel.fileOk,
+              onToggle: permissionChangeLocked
+                  ? null
+                  : (value) {
+                      refreshPermission(serverModel.toggleFile());
+                    },
+            ),
+            if (hasAudioPermission)
+              SettingsTile.switchTile(
+                title: Text(translate('Audio Capture')),
+                initialValue: serverModel.audioOk,
+                onToggle: permissionChangeLocked
+                    ? null
+                    : (value) {
+                        refreshPermission(serverModel.toggleAudio());
+                      },
+              )
+            else
               SettingsTile(
-                title: Obx(() => Text(gFFI.userModel.userName.value.isEmpty
-                    ? translate('Login')
-                    : '${translate('Logout')} (${gFFI.userModel.accountLabelWithHandle})')),
-                leading: Obx(() {
-                  final avatar = bind.mainResolveAvatarUrl(
-                      avatar: gFFI.userModel.avatar.value);
-                  return buildAvatarWidget(
-                        avatar: avatar,
-                        size: 28,
-                        borderRadius: null,
-                        fallback: Icon(Icons.person),
-                      ) ??
-                      Icon(Icons.person);
-                }),
-                onPressed: (context) {
-                  if (gFFI.userModel.userName.value.isEmpty) {
-                    loginDialog();
-                  } else {
-                    logOutConfirmDialog();
-                  }
-                },
+                title: Text(translate('android_version_audio_tip')),
               ),
-            ],
-          ),
+            SettingsTile.switchTile(
+              title: Text(translate('Enable clipboard')),
+              initialValue: serverModel.clipboardOk,
+              onToggle: permissionChangeLocked
+                  ? null
+                  : (value) {
+                      refreshPermission(serverModel.toggleClipboard());
+                    },
+            ),
+          ],
+        ),
         SettingsSection(title: Text(translate("Settings")), tiles: [
           if (!disabledSettings && !_hideNetwork && !_hideServer)
             SettingsTile(
@@ -809,12 +831,6 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
                 });
               },
             ),
-          SettingsTile(
-              title: Text(translate('Language')),
-              leading: Icon(Icons.translate),
-              onPressed: (context) {
-                showLanguageSettings(gFFI.dialogManager);
-              }),
           SettingsTile(
             title: Text(translate(
                 Theme.of(context).brightness == Brightness.light

@@ -136,7 +136,6 @@ Future<void> initEnv(String appType) async {
 void runMainApp(bool startService) async {
   // register uni links
   await initEnv(kAppTypeMain);
-  checkUpdate();
   // trigger connection status updater
   await bind.mainCheckConnectStatus();
   if (startService) {
@@ -180,7 +179,10 @@ void runMainApp(bool startService) async {
 
 void runMobileApp() async {
   await initEnv(kAppTypeMain);
-  checkUpdate();
+  if (isAndroid) {
+    bind.mainSetLocalOption(key: kCommConfKeyLang, value: defaultOptionLang);
+    await loadInstalledAppLabel();
+  }
   if (isAndroid) androidChannelInit();
   if (isAndroid) platformFFI.syncAndroidServiceAppDirConfigPath();
   draggablePositions.load();
@@ -467,6 +469,14 @@ class _AppState extends State<App> with WidgetsBindingObserver {
     _updateOrientation();
   }
 
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    final context = Get.context;
+    if (context != null) {
+      RefreshWrapper.of(context)?.rebuild();
+    }
+  }
+
   void _updateOrientation() {
     if (isDesktop) return;
 
@@ -501,8 +511,8 @@ class _AppState extends State<App> with WidgetsBindingObserver {
           navigatorKey: globalKey,
           debugShowCheckedModeBanner: false,
           title: isWeb
-              ? '${bind.mainGetAppNameSync()} Web Client V2 (Preview)'
-              : bind.mainGetAppNameSync(),
+              ? '${displayAppName()} Web Client V2 (Preview)'
+              : displayAppName(),
           theme: MyTheme.lightTheme,
           darkTheme: MyTheme.darkTheme,
           themeMode: MyTheme.currentThemeMode(),
