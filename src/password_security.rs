@@ -74,6 +74,20 @@ pub fn has_valid_password() -> bool {
         || permanent_enabled() && Config::has_permanent_password()
 }
 
+/// Whether the controlled side accepts a session without a password.
+///
+/// Click-to-accept has no one-time password. Both-mode also skips the prompt
+/// when neither the one-time nor the permanent password is available.
+/// Logon-screen password fallback still requires a prompt.
+pub fn no_password_access(
+    mode: ApproveMode,
+    allow_logon_screen_password: bool,
+    has_valid_password: bool,
+) -> bool {
+    (mode == ApproveMode::Click && !allow_logon_screen_password)
+        || (mode == ApproveMode::Both && !has_valid_password)
+}
+
 pub fn approve_mode() -> ApproveMode {
     let mode = Config::get_option("approve-mode");
     if mode == "password" {
@@ -603,6 +617,19 @@ mod test {
             "Decryption with pk fallback should succeed"
         );
         assert_eq!(decrypted.unwrap(), data);
+    }
+
+    #[test]
+    fn test_no_password_access_when_one_time_password_is_off() {
+        use super::{no_password_access, ApproveMode};
+
+        assert!(no_password_access(ApproveMode::Click, false, true));
+        assert!(no_password_access(ApproveMode::Click, false, false));
+        assert!(!no_password_access(ApproveMode::Click, true, false));
+        assert!(no_password_access(ApproveMode::Both, true, false));
+        assert!(!no_password_access(ApproveMode::Both, false, true));
+        assert!(!no_password_access(ApproveMode::Password, false, false));
+        assert!(!no_password_access(ApproveMode::Password, false, true));
     }
 
     #[test]

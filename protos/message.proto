@@ -329,6 +329,8 @@ message CursorPosition {
 message Hash {
   string salt = 1;
   string challenge = 2;
+  // Controlled side accepts the session without a password prompt.
+  bool no_password_access = 3;
 }
 
 enum ClipboardFormat {
