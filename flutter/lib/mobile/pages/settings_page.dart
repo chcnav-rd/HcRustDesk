@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../common.dart';
+import '../../common/widgets/agpl_notice.dart';
 import '../../common/widgets/dialog.dart';
 import '../../common/widgets/login.dart';
 import '../../consts.dart';
@@ -1003,7 +1004,13 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
               onPressed: (context) =>
                   launchUrlString('https://rustdesk.com/privacy.html'),
               leading: Icon(Icons.privacy_tip),
-            )
+            ),
+            CustomSettingsTile(
+              child: const Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 24),
+                child: AgplNotice(),
+              ),
+            ),
           ],
         ),
       ],
@@ -1110,21 +1117,26 @@ void showAbout(OverlayDialogManager dialogManager) {
   dialogManager.show((setState, close, context) {
     return CustomAlertDialog(
       title: Text(translate('About RustDesk')),
-      content: Wrap(direction: Axis.vertical, spacing: 12, children: [
-        Text('Version: $version'),
-        InkWell(
-            onTap: () async {
-              const url = 'https://rustdesk.com/';
-              await launchUrl(Uri.parse(url));
-            },
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('rustdesk.com',
-                  style: TextStyle(
-                    decoration: TextDecoration.underline,
-                  )),
-            )),
-      ]),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Version: $version'),
+          InkWell(
+              onTap: () async {
+                const url = 'https://rustdesk.com/';
+                await launchUrl(Uri.parse(url));
+              },
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('rustdesk.com',
+                    style: TextStyle(
+                      decoration: TextDecoration.underline,
+                    )),
+              )),
+          const AgplNotice(),
+        ],
+      ),
       actions: [],
     );
   }, clickMaskDismiss: true, backDismiss: true);

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/shared_state.dart';
+import 'package:flutter_hbb/common/widgets/agpl_notice.dart';
 import 'package:flutter_hbb/common/widgets/dialog.dart';
 import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/consts.dart';
@@ -644,6 +645,12 @@ List<TTextMenu> toolbarControls(BuildContext context, String id, FFI ffi) {
       onPressed: () => onCopyFingerprint(FingerprintState.find(id).value),
     ));
   }
+  v.add(TTextMenu(
+    child: Text(translate('Source code')),
+    onPressed: () {
+      openSourceRepository();
+    },
+  ));
   return v;
 }
 

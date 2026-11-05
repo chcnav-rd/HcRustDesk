@@ -17,6 +17,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../common.dart';
+import '../../common/widgets/agpl_notice.dart';
 import '../../common/widgets/chat_page.dart';
 import '../../models/file_model.dart';
 import '../../models/platform_model.dart';
@@ -535,7 +536,12 @@ class _CmHeaderState extends State<_CmHeader>
                         ),
                       )
                   ],
-                ))
+                )),
+                SizedBox(height: 8.0),
+                const AgplNotice(
+                  color: Colors.white,
+                  showCopyright: false,
+                ),
               ],
             ),
           ),

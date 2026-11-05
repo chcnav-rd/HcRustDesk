@@ -124,11 +124,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            if (!controlledBuild) {
-                applicationIdSuffix ".debug"
-            }
-        }
         release {
             // TODO: Add your own signing config for the release build.
             // Use release keystore when key.properties exists, otherwise fall back
