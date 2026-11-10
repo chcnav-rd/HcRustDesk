@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Aplikazio honek pantailan agertzen edo gailuan erreproduzitzen den guztia atzituko du. Babestu pasahitzak, ordainketa-datuak, mezuak, argazkiak, audioa eta bideoa."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Ziur teklatuko lasterbideen baimena ezabatu nahi duzula?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Ezabatu gordetako teklatuko lasterbideen baimena, berriro eskatu ahal izateko."),
+        ("Network interrupted, please try to restore the network", "Sarea eten egin da, saiatu berrezartzen"),
     ].iter().cloned().collect();
 }

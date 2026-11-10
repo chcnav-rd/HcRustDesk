@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Tämä sovellus näkee kaiken, mitä näytöllä näkyy tai laitteessa toistetaan. Suojaa salasanat, maksutiedot, viestit, kuvat, äänet ja videot."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Haluatko varmasti poistaa pikanäppäinoikeuden?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Poista tallennettu pikanäppäinoikeus, jotta se voidaan pyytää uudelleen."),
+        ("Network interrupted, please try to restore the network", "Verkkoyhteys katkesi, yritä palauttaa verkko"),
     ].iter().cloned().collect();
 }

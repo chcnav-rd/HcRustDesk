@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "ეს აპი წვდომას მიიღებს ყველაფერზე, რაც ეკრანზე ჩანს ან მოწყობილობაზე უკრავს. დაიცავით პაროლები, გადახდის მონაცემები, შეტყობინებები, ფოტოები, აუდიო და ვიდეო."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "ნამდვილად გსურთ კლავიატურის მალსახმობების ნებართვის გასუფთავება?"),
         ("clear-shortcuts-inhibitor-permission-tip", "გაასუფთავეთ შენახული კლავიატურის მალსახმობების ნებართვა, რომ მისი ხელახლა მოთხოვნა იყოს შესაძლებელი."),
+        ("Network interrupted, please try to restore the network", "ქსელი შეწყდა, სცადეთ მისი აღდგენა"),
     ].iter().cloned().collect();
 }

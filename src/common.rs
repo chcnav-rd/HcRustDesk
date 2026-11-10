@@ -939,7 +939,7 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
 }
 
 pub fn check_software_update() {
-    if is_custom_client() {
+    if is_custom_client() || !config::CUSTOM_SERVER_HOST.is_empty() {
         return;
     }
     let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
@@ -1028,6 +1028,9 @@ pub fn is_setup(name: &str) -> bool {
 }
 
 pub fn get_custom_rendezvous_server(custom: String) -> String {
+    if !config::CUSTOM_SERVER_HOST.is_empty() {
+        return config::CUSTOM_SERVER_HOST.to_owned();
+    }
     #[cfg(windows)]
     if let Ok(lic) = crate::platform::windows::get_license_from_exe_name() {
         if !lic.host.is_empty() {
@@ -1062,6 +1065,9 @@ pub fn get_api_server(api: String, custom: String) -> String {
 }
 
 fn get_api_server_(api: String, custom: String) -> String {
+    if !config::CUSTOM_SERVER_API.is_empty() {
+        return config::CUSTOM_SERVER_API.to_owned();
+    }
     #[cfg(windows)]
     if let Ok(lic) = crate::platform::windows::get_license_from_exe_name() {
         if !lic.api.is_empty() {
@@ -1802,6 +1808,9 @@ pub fn decode64<T: AsRef<[u8]>>(input: T) -> Result<Vec<u8>, base64::DecodeError
 }
 
 pub async fn get_key(sync: bool) -> String {
+    if !config::CUSTOM_SERVER_KEY.is_empty() {
+        return config::CUSTOM_SERVER_KEY.to_owned();
+    }
     #[cfg(windows)]
     if let Ok(lic) = crate::platform::windows::get_license_from_exe_name() {
         if !lic.key.is_empty() {
@@ -2081,6 +2090,7 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 pub fn load_custom_client() {
+    apply_builtin_custom_client_settings();
     apply_controller_build_settings();
     apply_controlled_build_settings();
     #[cfg(debug_assertions)]
@@ -2102,6 +2112,16 @@ pub fn load_custom_client() {
         };
         read_custom_client(&data.trim());
     }
+}
+
+fn apply_builtin_custom_client_settings() {
+    if config::CUSTOM_SERVER_HOST.is_empty() {
+        return;
+    }
+    config::BUILTIN_SETTINGS
+        .write()
+        .unwrap()
+        .insert(keys::OPTION_HIDE_SERVER_SETTINGS.to_owned(), "Y".to_owned());
 }
 
 fn apply_controller_build_settings() {

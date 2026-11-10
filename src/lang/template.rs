@@ -769,5 +769,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("All monitors", ""),
         ("#{} monitor", ""),
         ("conn-e2ee-unavailable-tip", ""),
+        ("Network interrupted, please try to restore the network", ""),
     ].iter().cloned().collect();
 }

@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Šī lietotne piekļūs visam, kas redzams ekrānā vai tiek atskaņots ierīcē. Sargājiet paroles, maksājumu datus, ziņojumus, fotoattēlus, audio un video."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Vai tiešām notīrīt tastatūras saīsņu atļauju?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Notīriet saglabāto tastatūras saīsņu atļauju, lai to varētu pieprasīt vēlreiz."),
+        ("Network interrupted, please try to restore the network", "Tīkls ir pārtraukts, mēģiniet to atjaunot"),
     ].iter().cloned().collect();
 }

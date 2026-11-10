@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Aplikasi ini akan mengakses semua yang ditampilkan di layar atau diputar di perangkat. Lindungi kata sandi, detail pembayaran, pesan, foto, audio, dan video."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Yakin ingin menghapus izin pintasan keyboard?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Hapus izin pintasan keyboard yang tersimpan agar dapat diminta lagi."),
+        ("Network interrupted, please try to restore the network", "Jaringan terputus, silakan coba pulihkan jaringan"),
     ].iter().cloned().collect();
 }

@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "സ്ക്രീനിൽ കാണുന്നതോ ഉപകരണത്തിൽ പ്ലേ ചെയ്യുന്നതോ ആയ എല്ലാ ഉള്ളടക്കവും ഈ ആപ്പ് ആക്‌സസ് ചെയ്യും. പാസ്‌വേഡുകൾ, പേയ്‌മെന്റ് വിവരങ്ങൾ, സന്ദേശങ്ങൾ, ഫോട്ടോകൾ, ഓഡിയോ, വീഡിയോ എന്നിവ സംരക്ഷിക്കുക."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "കീബോർഡ് കുറുക്കുവഴി അനുമതി മായ്ക്കണമെന്ന് ഉറപ്പാണോ?"),
         ("clear-shortcuts-inhibitor-permission-tip", "സംരക്ഷിച്ച കീബോർഡ് കുറുക്കുവഴി അനുമതി മായ്ച്ചാൽ അത് വീണ്ടും അഭ്യർത്ഥിക്കാം."),
+        ("Network interrupted, please try to restore the network", "നെറ്റ്‌വർക്ക് തടസ്സപ്പെട്ടു, അത് പുനഃസ്ഥാപിക്കാൻ ശ്രമിക്കുക"),
     ].iter().cloned().collect();
 }

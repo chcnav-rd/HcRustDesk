@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Αυτή η εφαρμογή θα έχει πρόσβαση σε ό,τι εμφανίζεται στην οθόνη ή αναπαράγεται στη συσκευή. Προστατέψτε κωδικούς, στοιχεία πληρωμής, μηνύματα, φωτογραφίες, ήχο και βίντεο."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Θέλετε σίγουρα να διαγράψετε την άδεια συντομεύσεων πληκτρολογίου;"),
         ("clear-shortcuts-inhibitor-permission-tip", "Διαγράψτε την αποθηκευμένη άδεια συντομεύσεων πληκτρολογίου ώστε να μπορεί να ζητηθεί ξανά."),
+        ("Network interrupted, please try to restore the network", "Το δίκτυο διακόπηκε, δοκιμάστε να το επαναφέρετε"),
     ].iter().cloned().collect();
 }

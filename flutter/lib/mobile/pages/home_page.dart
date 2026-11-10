@@ -47,13 +47,15 @@ class HomePageState extends State<HomePage> {
 
   void initPages() {
     _pages.clear();
-    final controllerBuild = kControllerBuild || bind.isOutgoingOnly();
-    if (controllerBuild && !bind.isIncomingOnly()) {
+    final controlledBuild = kControlledBuild || bind.isIncomingOnly();
+    final controllerBuild =
+        !controlledBuild && (kControllerBuild || bind.isOutgoingOnly());
+    if (controllerBuild) {
       _pages.add(ConnectionPage(
         appBarActions: [],
       ));
     }
-    if (isAndroid && !controllerBuild && !bind.isOutgoingOnly()) {
+    if (isAndroid && !controllerBuild) {
       _pages.add(ServerPage());
     }
     if (controllerBuild || _pages.isEmpty) {

@@ -38,6 +38,7 @@ class ServerModel with ChangeNotifier {
   bool _allowNumericOneTimePassword = false;
   String _approveMode = "";
   int _zeroClientLengthCounter = 0;
+  bool _sharingNetworkListenerAttached = false;
   bool _grantablePermissionsRequested = false;
 
   late String _emptyIdShow;
@@ -413,6 +414,27 @@ class ServerModel with ChangeNotifier {
     return res;
   }
 
+  void _attachSharingNetworkListener() {
+    if (!isAndroid || _sharingNetworkListenerAttached) return;
+    _sharingNetworkListenerAttached = true;
+    parent.target?.retainNetworkListener();
+  }
+
+  void _detachSharingNetworkListener() {
+    if (!_sharingNetworkListenerAttached) return;
+    _sharingNetworkListenerAttached = false;
+    parent.target?.releaseNetworkListener();
+  }
+
+  Future<void> _notifyIfNetworkLost() async {
+    if (!isAndroid) return;
+    try {
+      await parent.target?.invokeMethod(AndroidChannel.kNotifyIfNetworkLost);
+    } catch (e) {
+      debugPrint('notify network lost failed: $e');
+    }
+  }
+
   /// Toggle the screen sharing service.
   toggleService() async {
     if (_isStart) {
@@ -439,34 +461,46 @@ class ServerModel with ChangeNotifier {
         stopService();
       }
     } else {
-      await checkRequestNotificationPermission();
-      if (bind.mainGetLocalOption(key: kOptionDisableFloatingWindow) != 'Y') {
-        await checkFloatingWindowPermission();
-      }
-      if (!await AndroidPermissionManager.check(kManageExternalStorage)) {
-        await AndroidPermissionManager.request(kManageExternalStorage);
-      }
-      final res = await parent.target?.dialogManager
-          .show<bool>((setState, close, context) {
-        submit() => close(true);
-        return CustomAlertDialog(
-          title: Row(children: [
-            const Icon(Icons.warning_amber_sharp,
-                color: Colors.redAccent, size: 28),
-            const SizedBox(width: 10),
-            Text(translate("Warning")),
-          ]),
-          content: Text(translate("screen_capture_privacy_tip")),
-          actions: [
-            dialogButton("Cancel", onPressed: close, isOutline: true),
-            dialogButton("OK", onPressed: submit),
-          ],
-          onSubmit: submit,
-          onCancel: close,
-        );
-      });
-      if (res == true) {
-        startService();
+      unawaited(_notifyIfNetworkLost());
+      _attachSharingNetworkListener();
+      var started = false;
+      try {
+        await checkRequestNotificationPermission();
+        if (bind.mainGetLocalOption(key: kOptionDisableFloatingWindow) != 'Y') {
+          await checkFloatingWindowPermission();
+        }
+        if (!await AndroidPermissionManager.check(kManageExternalStorage)) {
+          await AndroidPermissionManager.request(kManageExternalStorage);
+        }
+        final res = await parent.target?.dialogManager
+            .show<bool>((setState, close, context) {
+          submit() => close(true);
+          return CustomAlertDialog(
+            title: Row(children: [
+              const Icon(Icons.warning_amber_sharp,
+                  color: Colors.redAccent, size: 28),
+              const SizedBox(width: 10),
+              Text(translate("Warning")),
+            ]),
+            content: Text(translate("screen_capture_privacy_tip")),
+            actions: [
+              dialogButton("Cancel", onPressed: close, isOutline: true),
+              dialogButton("OK", onPressed: submit),
+            ],
+            onSubmit: submit,
+            onCancel: close,
+          );
+        });
+        if (res == true) {
+          await startService();
+          started = true;
+        }
+      } catch (e) {
+        debugPrint('start sharing failed: $e');
+      } finally {
+        if (!started) {
+          _detachSharingNetworkListener();
+        }
       }
     }
   }
@@ -474,6 +508,7 @@ class ServerModel with ChangeNotifier {
   /// Start the screen sharing service.
   Future<void> startService() async {
     _isStart = true;
+    _attachSharingNetworkListener();
     notifyListeners();
     parent.target?.ffiModel.updateEventListener(parent.target!.sessionId, "");
     await parent.target?.invokeMethod("init_service");
@@ -488,6 +523,7 @@ class ServerModel with ChangeNotifier {
   /// Stop the screen sharing service.
   Future<void> stopService() async {
     _isStart = false;
+    _detachSharingNetworkListener();
     closeAll();
     await parent.target?.invokeMethod("stop_service");
     await bind.mainStopService();

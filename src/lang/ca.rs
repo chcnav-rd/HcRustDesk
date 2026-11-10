@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Aquesta aplicació accedirà a tot el que es mostri a la pantalla o es reprodueixi al dispositiu. Protegiu les contrasenyes, les dades de pagament, els missatges, les fotos, l'àudio i el vídeo."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Segur que voleu esborrar el permís de les dreceres de teclat?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Esborra el permís desat de les dreceres de teclat perquè es pugui tornar a demanar."),
+        ("Network interrupted, please try to restore the network", "La xarxa s'ha interromput, proveu de restablir-la"),
     ].iter().cloned().collect();
 }

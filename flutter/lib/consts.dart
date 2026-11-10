@@ -459,6 +459,9 @@ class AndroidChannel {
   static final kGetStartOnBootOpt = "get_start_on_boot_opt";
   static final kSetStartOnBootOpt = "set_start_on_boot_opt";
   static final kSyncAppDirConfigPath = "sync_app_dir";
+  static final kRegisterNetworkListener = "register_network_listener";
+  static final kUnregisterNetworkListener = "unregister_network_listener";
+  static final kNotifyIfNetworkLost = "notify_if_network_lost";
 }
 
 /// flutter/packages/flutter/lib/src/services/keyboard_key.dart -> _keyLabels

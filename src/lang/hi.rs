@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "यह ऐप आपकी स्क्रीन पर दिखने या डिवाइस पर चलने वाली हर चीज़ तक पहुँचेगा। पासवर्ड, भुगतान जानकारी, संदेश, फ़ोटो, ऑडियो और वीडियो सुरक्षित रखें।"),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "क्या आप वाकई कीबोर्ड शॉर्टकट अनुमति साफ़ करना चाहते हैं?"),
         ("clear-shortcuts-inhibitor-permission-tip", "सहेजी गई कीबोर्ड शॉर्टकट अनुमति साफ़ करें ताकि उसे फिर से माँगा जा सके।"),
+        ("Network interrupted, please try to restore the network", "नेटवर्क बाधित हो गया है, कृपया नेटवर्क बहाल करने का प्रयास करें"),
     ].iter().cloned().collect();
 }

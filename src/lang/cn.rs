@@ -787,5 +787,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "确定要清除键盘快捷键权限吗？"),
         ("clear-shortcuts-inhibitor-permission-tip", "清除已保存的键盘快捷键权限，以便可以再次申请。"),
         ("Remote support", "远程协助"),
+        ("Network interrupted, please try to restore the network", "网络中断，请尝试恢复网络"),
     ].iter().cloned().collect();
 }

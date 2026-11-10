@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "이 앱은 화면에 표시되거나 기기에서 재생되는 모든 내용에 접근합니다. 비밀번호, 결제 정보, 메시지, 사진, 오디오, 동영상 같은 민감한 정보를 보호하세요."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "키보드 단축키 권한을 지우시겠습니까?"),
         ("clear-shortcuts-inhibitor-permission-tip", "저장된 키보드 단축키 권한을 지우면 다시 요청할 수 있습니다."),
+        ("Network interrupted, please try to restore the network", "네트워크가 중단되었습니다. 네트워크 복구를 시도해 주세요"),
     ].iter().cloned().collect();
 }

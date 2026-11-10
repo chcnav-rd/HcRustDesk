@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Ova će aplikacija pristupiti svemu što je prikazano na zaslonu ili se reproducira na uređaju. Zaštitite lozinke, podatke o plaćanju, poruke, fotografije, zvuk i video."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Jeste li sigurni da želite obrisati dozvolu za tipkovne prečace?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Obrišite spremljenu dozvolu za tipkovne prečace kako bi se mogla ponovno zatražiti."),
+        ("Network interrupted, please try to restore the network", "Mreža je prekinuta, pokušajte je vratiti"),
     ].iter().cloned().collect();
 }

@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Ez az alkalmazás hozzáfér mindenhez, ami a képernyőn megjelenik vagy az eszközön lejátszódik. Védje a jelszavakat, a fizetési adatokat, az üzeneteket, a fényképeket, a hangot és a videót."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Biztosan törli a billentyűparancs-engedélyt?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Törölje a mentett billentyűparancs-engedélyt, hogy újra kérhető legyen."),
+        ("Network interrupted, please try to restore the network", "A hálózat megszakadt, próbálja meg helyreállítani"),
     ].iter().cloned().collect();
 }

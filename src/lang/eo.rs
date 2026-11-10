@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Ĉi tiu aplikaĵo aliros ĉion montratan sur la ekrano aŭ ludatan en la aparato. Protektu pasvortojn, paginformojn, mesaĝojn, fotojn, sonon kaj videon."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Ĉu vi certe volas forigi la permeson de klavaraj ŝparvojoj?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Forigu la konservitan permeson de klavaraj ŝparvojoj, por ke ĝi estu denove petata."),
+        ("Network interrupted, please try to restore the network", "Reto interrompita, bonvolu provi restarigi la reton"),
     ].iter().cloned().collect();
 }

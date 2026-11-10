@@ -14,9 +14,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.ClipboardManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Bundle
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import android.view.WindowManager
 import android.media.MediaCodecInfo
@@ -25,6 +31,7 @@ import android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlan
 import android.media.MediaCodecList
 import android.media.MediaFormat
 import android.util.DisplayMetrics
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import org.json.JSONArray
 import org.json.JSONObject
@@ -49,6 +56,10 @@ class MainActivity : FlutterActivity() {
 
     private var isAudioStart = false
     private val audioRecordHandle = AudioRecordHandle(this, { false }, { isAudioStart })
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private val networkHandler = Handler(Looper.getMainLooper())
+    private var networkLostCheck: Runnable? = null
+    private var networkLossNotified = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -106,6 +117,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         Log.e(logTag, "onDestroy")
+        unregisterNetworkListener()
         mainService?.let {
             unbindService(serviceConnection)
         }
@@ -274,6 +286,18 @@ class MainActivity : FlutterActivity() {
                 "on_voice_call_closed" -> {
                     onVoiceCallClosed()
                 }
+                REGISTER_NETWORK_LISTENER -> {
+                    registerNetworkListener()
+                    result.success(true)
+                }
+                UNREGISTER_NETWORK_LISTENER -> {
+                    unregisterNetworkListener()
+                    result.success(true)
+                }
+                NOTIFY_IF_NETWORK_LOST -> {
+                    notifyIfNetworkLost()
+                    result.success(true)
+                }
                 else -> {
                     result.error("-1", "No such method", null)
                 }
@@ -358,6 +382,126 @@ class MainActivity : FlutterActivity() {
         result.put("h", h)
         result.put("codecs", codecArray)
         FFI.setCodecInfo(result.toString())
+    }
+
+    private fun registerNetworkListener() {
+        if (networkCallback != null) {
+            if (!hasActiveNetwork() && networkLostCheck == null) {
+                scheduleNetworkLostCheck()
+            }
+            return
+        }
+        val connectivityManager =
+            getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                networkLossNotified = false
+                cancelNetworkLostCheck()
+            }
+
+            override fun onLost(network: Network) {
+                scheduleNetworkLostCheck()
+            }
+
+            override fun onUnavailable() {
+                scheduleNetworkLostCheck()
+            }
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                connectivityManager.registerDefaultNetworkCallback(callback)
+            } else {
+                val request = NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build()
+                connectivityManager.registerNetworkCallback(request, callback)
+            }
+            networkCallback = callback
+            if (!hasActiveNetwork() && networkLostCheck == null) {
+                scheduleNetworkLostCheck()
+            }
+        } catch (e: Exception) {
+            Log.e(logTag, "registerNetworkListener failed", e)
+        }
+    }
+
+    private fun notifyIfNetworkLost() {
+        if (hasActiveNetwork()) {
+            networkLossNotified = false
+            return
+        }
+        networkLossNotified = true
+        showNetworkLostToast()
+    }
+
+    private fun showNetworkLostToast() {
+        val message = try {
+            translate("Network interrupted, please try to restore the network")
+        } catch (e: Exception) {
+            Log.e(logTag, "translate network toast failed", e)
+            ""
+        }
+        val text = message.ifBlank {
+            "Network interrupted, please try to restore the network"
+        }
+        try {
+            Toast.makeText(applicationContext, text, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Log.e(logTag, "showNetworkLostToast failed", e)
+        }
+    }
+
+    private fun unregisterNetworkListener() {
+        cancelNetworkLostCheck()
+        networkLossNotified = false
+        val callback = networkCallback ?: return
+        networkCallback = null
+        val connectivityManager =
+            getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        try {
+            connectivityManager.unregisterNetworkCallback(callback)
+        } catch (e: Exception) {
+            Log.e(logTag, "unregisterNetworkListener failed", e)
+        }
+    }
+
+    private fun scheduleNetworkLostCheck(
+        requireListener: Boolean = true,
+        delayMs: Long = 800
+    ) {
+        cancelNetworkLostCheck()
+        val check = Runnable {
+            networkLostCheck = null
+            if (networkLossNotified || hasActiveNetwork()) {
+                return@Runnable
+            }
+            if (requireListener && networkCallback == null) {
+                return@Runnable
+            }
+            networkLossNotified = true
+            showNetworkLostToast()
+        }
+        networkLostCheck = check
+        networkHandler.postDelayed(check, delayMs)
+    }
+
+    private fun cancelNetworkLostCheck() {
+        networkLostCheck?.let { networkHandler.removeCallbacks(it) }
+        networkLostCheck = null
+    }
+
+    private fun hasActiveNetwork(): Boolean {
+        val connectivityManager =
+            getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities =
+                connectivityManager.getNetworkCapabilities(network) ?: return false
+            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        }
+        @Suppress("DEPRECATION")
+        val info = connectivityManager.activeNetworkInfo
+        return info != null && info.isConnected
     }
 
     private fun onVoiceCallStarted() {

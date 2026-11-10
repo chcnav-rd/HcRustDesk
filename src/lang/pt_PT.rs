@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Esta aplicação acede a tudo o que é mostrado no ecrã ou reproduzido no dispositivo. Proteja palavras-passe, dados de pagamento, mensagens, fotografias, áudio e vídeo."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Tem a certeza de que pretende limpar a permissão dos atalhos de teclado?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Limpe a permissão guardada dos atalhos de teclado para a poder pedir novamente."),
+        ("Network interrupted, please try to restore the network", "Ligação de rede interrompida, tente restaurar a rede"),
     ].iter().cloned().collect();
 }

@@ -786,5 +786,6 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("screen_capture_privacy_tip", "Custa aplicatzione at a atzèdere a totu su chi est mustradu in s'ischermu o reprodùidu in s'aparatu. Ampara is craes, is datos de pagamentu, is messàgios, is fotos, s'àudio e su vìdeu."),
         ("confirm-clear-shortcuts-inhibitor-permission-tip", "Ses seguru de bòlere cantzellare su permissu de is curtzadòrgios de tecladu?"),
         ("clear-shortcuts-inhibitor-permission-tip", "Cantzella su permissu sarvadu de is curtzadòrgios de tecladu pro lu pòdere pedire torra."),
+        ("Network interrupted, please try to restore the network", "Rete interrùmpida, proa a dda recuperare"),
     ].iter().cloned().collect();
 }

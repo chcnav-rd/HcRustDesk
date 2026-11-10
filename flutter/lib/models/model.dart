@@ -3663,12 +3663,16 @@ enum ConnType {
   terminal
 }
 
+int _sessionNetworkListenerCount = 0;
+
 /// Flutter state manager and data communication with the Rust core.
 class FFI {
   var id = '';
   var version = '';
   var connType = ConnType.defaultConn;
   var closed = false;
+  bool _networkListenerActive = false;
+  bool _deferNetworkListenerRelease = false;
 
   /// dialogManager use late to ensure init after main page binding [globalKey]
   late final dialogManager = OverlayDialogManager();
@@ -3938,6 +3942,62 @@ class FFI {
     });
     // every instance will bind a stream
     this.id = id;
+    _attachSessionNetworkListener();
+  }
+
+  void _attachSessionNetworkListener() {
+    if (!isAndroid) return;
+    if (_networkListenerActive) {
+      _deferNetworkListenerRelease = true;
+      return;
+    }
+    _networkListenerActive = true;
+    _retainNetworkListener();
+  }
+
+  void _detachSessionNetworkListener() {
+    if (!isAndroid || !_networkListenerActive) return;
+    if (_deferNetworkListenerRelease) {
+      _deferNetworkListenerRelease = false;
+      return;
+    }
+    _networkListenerActive = false;
+    _releaseNetworkListener();
+  }
+
+  /// Hold the Android network-loss listener until [releaseNetworkListener].
+  void retainNetworkListener() {
+    _retainNetworkListener();
+  }
+
+  /// Release one hold on the Android network-loss listener.
+  void releaseNetworkListener() {
+    _releaseNetworkListener();
+  }
+
+  void _retainNetworkListener() {
+    if (!isAndroid) return;
+    _sessionNetworkListenerCount++;
+    if (_sessionNetworkListenerCount == 1) {
+      unawaited(invokeMethod(AndroidChannel.kRegisterNetworkListener)
+          .catchError((Object e) {
+        debugPrint('register network listener failed: $e');
+        return false;
+      }));
+    }
+  }
+
+  void _releaseNetworkListener() {
+    if (!isAndroid) return;
+    if (_sessionNetworkListenerCount <= 0) return;
+    _sessionNetworkListenerCount--;
+    if (_sessionNetworkListenerCount == 0) {
+      unawaited(invokeMethod(AndroidChannel.kUnregisterNetworkListener)
+          .catchError((Object e) {
+        debugPrint('unregister network listener failed: $e');
+        return false;
+      }));
+    }
   }
 
   void onEvent2UIRgba() async {
@@ -3995,6 +4055,7 @@ class FFI {
 
   /// Close the remote session.
   Future<void> close({bool closeSession = true}) async {
+    _detachSessionNetworkListener();
     closed = true;
     chatModel.close();
     // Close all terminal models
