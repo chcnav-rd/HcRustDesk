@@ -118,6 +118,12 @@ const CHARS: &[char] = &[
 ];
 
 pub const RENDEZVOUS_SERVERS: &[&str] = &["rs-ny.rustdesk.com"];
+// Built-in custom server of this branded build. Non-empty values are
+// enforced at startup and user changes to server settings are ignored.
+pub const CUSTOM_SERVER_HOST: &str = "";
+pub const CUSTOM_SERVER_KEY: &str = "";
+pub const CUSTOM_SERVER_API: &str = "";
+pub const CUSTOM_SERVER_RELAY: &str = "";
 pub const RS_PUB_KEY: &str = "OeVuKk5nlHiXp+APNn0Y3pC1Iwpwn44JGqrQCsWqmBw=";
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
@@ -911,6 +917,14 @@ impl Config {
     }
 
     pub fn get_rendezvous_server() -> String {
+        if !CUSTOM_SERVER_HOST.is_empty() {
+            let host = CUSTOM_SERVER_HOST.to_owned();
+            return if host.contains(':') {
+                host
+            } else {
+                format!("{host}:{RENDEZVOUS_PORT}")
+            };
+        }
         let mut rendezvous_server = EXE_RENDEZVOUS_SERVER.read().unwrap().clone();
         if rendezvous_server.is_empty() {
             rendezvous_server = Self::get_option("custom-rendezvous-server");
@@ -934,6 +948,9 @@ impl Config {
     }
 
     pub fn get_rendezvous_servers() -> Vec<String> {
+        if !CUSTOM_SERVER_HOST.is_empty() {
+            return vec![CUSTOM_SERVER_HOST.to_owned()];
+        }
         let s = EXE_RENDEZVOUS_SERVER.read().unwrap().clone();
         if !s.is_empty() {
             return vec![s];
